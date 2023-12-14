@@ -1,10 +1,15 @@
 from django.shortcuts import render
 from django.contrib import messages
 from .forms import ContatoForm, ProdutoModelForm
+from .models import Produto
+from django.shortcuts import redirect
 
 
 def index(request):
-    return render(request, 'index.html')
+    context = {
+        'produtos': Produto.objects.all()
+    }
+    return render(request, 'index.html', context)
 
 
 def contato(request):
@@ -25,17 +30,20 @@ def contato(request):
 
 
 def produto(request):
-    if str(request.method) == 'POST':
-        form = ProdutoModelForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Produto salvo com sucesso.')
-            form = ProdutoModelForm()
+    if str(request.user) != 'AnonymousUser':
+        if str(request.method) == 'POST':
+            form = ProdutoModelForm(request.POST, request.FILES)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Produto salvo com sucesso.')
+                form = ProdutoModelForm()
+            else:
+                messages.error(request, 'Erro ao salvar produto.')
         else:
-            messages.error(request, 'Erro ao salvar produto.')
+            form = ProdutoModelForm()
+        context = {
+            'form': form
+        }        
+        return render(request, 'produto.html', context)
     else:
-        form = ProdutoModelForm()
-    context = {
-        'form': form
-    }        
-    return render(request, 'produto.html', context)
+        return redirect('index')
